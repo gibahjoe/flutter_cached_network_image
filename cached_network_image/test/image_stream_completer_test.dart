@@ -80,6 +80,11 @@ void main() {
   late Image image20x10;
   late Image image200x100;
   late Image image300x100;
+  cleanUpImages(List<ImageInfo> images){
+    images.forEach((element) {
+      element.dispose();
+    });
+  }
   setUp(() async {
     image20x10 = await createTestImage(width: 20, height: 10);
     image200x100 = await createTestImage(width: 200, height: 100);
@@ -114,7 +119,9 @@ void main() {
     );
 
     final ImageStreamListener listener =
-        ImageStreamListener((ImageInfo info, bool syncCall) {});
+        ImageStreamListener((ImageInfo info, bool syncCall) {
+          cleanUpImages([info]);
+        });
     // Cause the completer to dispose.
     completer.addListener(listener);
     completer.removeListener(listener);
@@ -144,7 +151,9 @@ void main() {
     await tester.idle();
     expect(mockCodec.numFramesAsked, 0);
 
-    listener(ImageInfo image, bool synchronousCall) {}
+    listener(ImageInfo image, bool synchronousCall) {
+      cleanUpImages([image]);
+    }
     imageStream.addListener(ImageStreamListener(listener));
     await tester.idle();
     expect(mockCodec.numFramesAsked, 1);
@@ -160,7 +169,9 @@ void main() {
       scale: 1.0,
     );
 
-    listener(ImageInfo image, bool synchronousCall) {}
+    listener(ImageInfo image, bool synchronousCall) {
+      cleanUpImages([image]);
+    }
     imageStream.addListener(ImageStreamListener(listener));
     await tester.idle();
     expect(mockCodec.numFramesAsked, 0);
@@ -181,7 +192,9 @@ void main() {
       scale: 1.0,
     );
 
-    listener(ImageInfo image, bool synchronousCall) {}
+    listener(ImageInfo image, bool synchronousCall) {
+      cleanUpImages([image]);
+    }
     imageStream.addListener(ImageStreamListener(listener));
     await tester.idle();
     expect(firstCodec.numFramesAsked, 0);
@@ -211,7 +224,9 @@ void main() {
     await tester.idle();
     expect(mockCodec.numFramesAsked, 0);
 
-    listener(ImageInfo image, bool synchronousCall) {}
+    listener(ImageInfo image, bool synchronousCall) {
+      cleanUpImages([image]);
+    }
     final streamListener = ImageStreamListener(listener);
     imageStream.addListener(streamListener);
     await tester.idle();
@@ -235,7 +250,9 @@ void main() {
 
     imageStream.addListener(
       ImageStreamListener(
-        (ImageInfo image, bool synchronousCall) {},
+        (ImageInfo image, bool synchronousCall) {
+          cleanUpImages([image]);
+        },
         onChunk: (ImageChunkEvent event) {
           chunkEvents.add(event);
         },
@@ -272,7 +289,9 @@ void main() {
     await tester.idle();
     imageStream.addListener(
       ImageStreamListener(
-        (ImageInfo image, bool synchronousCall) {},
+        (ImageInfo image, bool synchronousCall) {
+          cleanUpImages([image]);
+        },
         onChunk: (ImageChunkEvent event) {
           chunkEvents.add(event);
         },
@@ -301,7 +320,9 @@ void main() {
 
     imageStream.addListener(
       ImageStreamListener(
-        (ImageInfo image, bool synchronousCall) {},
+        (ImageInfo image, bool synchronousCall) {
+          cleanUpImages([image]);
+        },
         onChunk: (ImageChunkEvent event) {
           chunkEvents.add(event);
         },
@@ -340,7 +361,9 @@ void main() {
     await tester.idle();
     imageStream.addListener(
       ImageStreamListener(
-        (ImageInfo image, bool synchronousCall) {},
+        (ImageInfo image, bool synchronousCall) {
+          cleanUpImages([image]);
+        },
         onChunk: (ImageChunkEvent event) {
           chunkEvents.add(event);
         },
@@ -368,7 +391,9 @@ void main() {
 
     imageStream.addListener(
       ImageStreamListener(
-        (ImageInfo image, bool synchronousCall) {},
+        (ImageInfo image, bool synchronousCall) {
+          cleanUpImages([image]);
+        },
         onChunk: (ImageChunkEvent event) {
           chunkEvents.add(event);
         },
@@ -396,7 +421,9 @@ void main() {
       scale: 1.0,
     );
 
-    listener(ImageInfo image, bool synchronousCall) {}
+    listener(ImageInfo image, bool synchronousCall) {
+      cleanUpImages([image]);
+    }
     imageStream.addListener(ImageStreamListener(listener));
     codecStream.add(mockCodec);
     // MultiImageStreamCompleter only sets an error handler for the next
@@ -423,12 +450,12 @@ void main() {
     );
 
     final emittedImages = <ImageInfo>[];
-    imageStream.addListener(
-      ImageStreamListener((ImageInfo image, bool synchronousCall) {
+    var imageStreamListener = ImageStreamListener((ImageInfo image, bool synchronousCall) {
         emittedImages.add(image);
-      }),
+      });
+    imageStream.addListener(
+      imageStreamListener,
     );
-
     codecStream.add(mockCodec);
     await tester.idle();
 
@@ -442,6 +469,8 @@ void main() {
           .every((ImageInfo info) => info.image.isCloneOf(frame.image)),
       true,
     );
+    imageStream.removeListener(imageStreamListener);
+    cleanUpImages(emittedImages);
   });
 
   testWidgets('ImageStream emits frames (animated images)',
@@ -457,10 +486,11 @@ void main() {
     );
 
     final emittedImages = <ImageInfo>[];
-    imageStream.addListener(
-      ImageStreamListener((ImageInfo image, bool synchronousCall) {
+    var imageStreamListener = ImageStreamListener((ImageInfo image, bool synchronousCall) {
         emittedImages.add(image);
-      }),
+      });
+    imageStream.addListener(
+      imageStreamListener,
     );
 
     codecStream.add(mockCodec);
@@ -493,6 +523,8 @@ void main() {
     // Let the pending timer for the next frame to complete so we can cleanly
     // quit the test without pending timers.
     await tester.pump(const Duration(milliseconds: 400));
+    imageStream.removeListener(imageStreamListener);
+    cleanUpImages(emittedImages);
   });
 
   testWidgets('animation wraps back', (WidgetTester tester) async {
@@ -507,10 +539,11 @@ void main() {
     );
 
     final emittedImages = <ImageInfo>[];
-    imageStream.addListener(
-      ImageStreamListener((ImageInfo image, bool synchronousCall) {
+    var imageStreamListener = ImageStreamListener((ImageInfo image, bool synchronousCall) {
         emittedImages.add(image);
-      }),
+      });
+    imageStream.addListener(
+      imageStreamListener,
     );
 
     codecStream.add(mockCodec);
@@ -537,6 +570,8 @@ void main() {
     // Let the pending timer for the next frame to complete so we can cleanly
     // quit the test without pending timers.
     await tester.pump(const Duration(milliseconds: 200));
+    imageStream.removeListener(imageStreamListener);
+    cleanUpImages(emittedImages);
   });
 
   testWidgets('animation doesnt repeat more than specified',
@@ -552,10 +587,11 @@ void main() {
     );
 
     final emittedImages = <ImageInfo>[];
-    imageStream.addListener(
-      ImageStreamListener((ImageInfo image, bool synchronousCall) {
+    var imageStreamListener = ImageStreamListener((ImageInfo image, bool synchronousCall) {
         emittedImages.add(image);
-      }),
+      });
+    imageStream.addListener(
+      imageStreamListener,
     );
 
     codecStream.add(mockCodec);
@@ -580,6 +616,8 @@ void main() {
 
     expect(emittedImages[0].image.isCloneOf(frame1.image), true);
     expect(emittedImages[1].image.isCloneOf(frame2.image), true);
+    cleanUpImages(emittedImages);
+    imageStream.removeListener(imageStreamListener);
   });
 
   testWidgets('frames are only decoded when there are listeners',
@@ -594,8 +632,11 @@ void main() {
       scale: 1.0,
     );
 
-    listener(ImageInfo image, bool synchronousCall) {}
-    imageStream.addListener(ImageStreamListener(listener));
+    listener(ImageInfo image, bool synchronousCall) {
+      cleanUpImages([image]);
+    }
+    var imageStreamListener = ImageStreamListener(listener);
+    imageStream.addListener(imageStreamListener);
     final handle = imageStream.keepAlive();
 
     codecStream.add(mockCodec);
@@ -610,7 +651,7 @@ void main() {
     await tester.idle(); // let nextFrameFuture complete
     await tester.pump(); // first animation frame shows on first app frame.
     mockCodec.completeNextFrame(frame2);
-    imageStream.removeListener(ImageStreamListener(listener));
+    imageStream.removeListener(imageStreamListener);
     await tester.idle(); // let nextFrameFuture complete
     await tester.pump(const Duration(milliseconds: 400)); // emit 2nd frame.
 
@@ -618,10 +659,10 @@ void main() {
     // listeners to the stream
     expect(mockCodec.numFramesAsked, 2);
 
-    imageStream.addListener(ImageStreamListener(listener));
+    imageStream.addListener(imageStreamListener);
     await tester.idle(); // let nextFrameFuture complete
     expect(mockCodec.numFramesAsked, 3);
-
+    imageStream.removeListener(imageStreamListener);
     handle.dispose();
   });
 
@@ -646,8 +687,10 @@ void main() {
       emittedImages2.add(image);
     }
 
-    imageStream.addListener(ImageStreamListener(listener1));
-    imageStream.addListener(ImageStreamListener(listener2));
+    var imageStreamListener1 = ImageStreamListener(listener1);
+    imageStream.addListener(imageStreamListener1);
+    var imageStreamListener2 = ImageStreamListener(listener2);
+    imageStream.addListener(imageStreamListener2);
 
     codecStream.add(mockCodec);
     await tester.idle();
@@ -667,12 +710,16 @@ void main() {
     mockCodec.completeNextFrame(frame2);
     await tester.idle(); // let nextFrameFuture complete
     await tester.pump(); // next app frame will schedule a timer.
-    imageStream.removeListener(ImageStreamListener(listener1));
+    imageStream.removeListener(imageStreamListener1);
 
     await tester.pump(const Duration(milliseconds: 400)); // emit 2nd frame.
     expect(emittedImages1.single.image.isCloneOf(frame1.image), true);
     expect(emittedImages2[0].image.isCloneOf(frame1.image), true);
     expect(emittedImages2[1].image.isCloneOf(frame2.image), true);
+
+    cleanUpImages(emittedImages1);
+    cleanUpImages(emittedImages2);
+    imageStream.removeListener(imageStreamListener2);
   });
 
   testWidgets('timer is canceled when listeners are removed',
@@ -687,7 +734,9 @@ void main() {
       scale: 1.0,
     );
 
-    listener(ImageInfo image, bool synchronousCall) {}
+    listener(ImageInfo image, bool synchronousCall) {
+      cleanUpImages([image]);
+    }
     imageStream.addListener(ImageStreamListener(listener));
 
     codecStream.add(mockCodec);
@@ -729,7 +778,9 @@ void main() {
 
     streamUnderTest.addListener(
       ImageStreamListener(
-        (ImageInfo image, bool synchronousCall) {},
+        (ImageInfo image, bool synchronousCall) {
+          cleanUpImages([image]);
+        },
         onError: errorListener,
       ),
     );
@@ -760,15 +811,18 @@ void main() {
       scale: 1.0,
     );
 
-    listener(ImageInfo image, bool synchronousCall) {}
-    imageStream.addListener(ImageStreamListener(listener));
+    listener(ImageInfo image, bool synchronousCall) {
+      cleanUpImages([image]);
+    }
+    var imageStreamListener = ImageStreamListener(listener);
+    imageStream.addListener(imageStreamListener);
 
     codecStream.add(mockCodec);
 
     await tester.idle(); // let nextFrameFuture complete
 
-    imageStream.addListener(ImageStreamListener(listener));
-    imageStream.removeListener(ImageStreamListener(listener));
+    imageStream.addListener(imageStreamListener);
+    imageStream.removeListener(imageStreamListener);
 
     final FrameInfo frame1 =
         FakeFrameInfo(const Duration(milliseconds: 200), image20x10);
@@ -778,6 +832,8 @@ void main() {
     await tester.pump(); // first animation frame shows on first app frame.
 
     await tester.pump(const Duration(milliseconds: 200)); // emit 2nd frame.
+    // Cleanup
+    imageStream.removeListener(imageStreamListener);
   });
 
   testWidgets(
@@ -797,6 +853,7 @@ void main() {
 
     var onImageCount = 0;
     activeListener(ImageInfo image, bool synchronousCall) {
+      cleanUpImages([image]);
       onImageCount += 1;
     }
 
@@ -872,8 +929,11 @@ void main() {
       scale: 1.0,
     );
 
-    listener(ImageInfo image, bool synchronousCall) {}
-    imageStream.addListener(ImageStreamListener(listener));
+    listener(ImageInfo image, bool synchronousCall) {
+      cleanUpImages([image]);
+    }
+    var imageStreamListener = ImageStreamListener(listener);
+    imageStream.addListener(imageStreamListener);
 
     codecStream.add(firstCodec);
     await tester.idle();
@@ -910,5 +970,7 @@ void main() {
     // Decoding of the 3rd frame should not start as we switched images
     expect(firstCodec.numFramesAsked, 3);
     expect(secondCodec.numFramesAsked, 1);
+  //   clean up
+    imageStream.removeListener(imageStreamListener);
   });
 }

@@ -90,7 +90,10 @@ class CachedNetworkImageProvider
     if (errorListener != null) {
       imageStreamCompleter.addListener(
         ImageStreamListener(
-          (image, synchronousCall) {},
+          (image, synchronousCall) {
+            // Clean up image info since its not used
+            image.dispose();
+          },
           onError: (Object error, StackTrace? trace) {
             errorListener?.call(error);
           },
@@ -144,7 +147,10 @@ class CachedNetworkImageProvider
     if (errorListener != null) {
       imageStreamCompleter.addListener(
         ImageStreamListener(
-          (image, synchronousCall) {},
+          (image, synchronousCall) {
+            // Clean up image info since its not used
+            image.dispose();
+          },
           onError: (Object error, StackTrace? trace) {
             errorListener?.call(error);
           },
